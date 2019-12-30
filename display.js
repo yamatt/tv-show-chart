@@ -8,7 +8,7 @@ function get_show_id() {
 }
 
 function get_data_url(show_id) {
-    return '/data/' + show_id + ".data"
+    return 'data/' + show_id + ".data"
 }
 
 function data_to_object(text) {
