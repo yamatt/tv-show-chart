@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>TV Show Chart</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="pure-g"><!-- top bar -->
+      <div class="pure-u-1-12"></div>
+      <div class="pure-u-1-2"></div>
+      <div class="pure-u-5-12">
+        <form class="pure-form">
+          <label for="show_search">Enter IMDB show ID</label>
+          <input id="show_search" type="search" name="id" value="tt0096697" placeholder="tt0096697" class="pure-input-rounded">
+          <button type="submit" class="pure-button pure-button-primary">Go</button>
+        </form>
+      </div>
+    </div>
+    <div class="pure-g"> <!-- content -->
+        <div class="pure-u-1-6"></div>
+        <div class="pure-u-2-3 content">
+          <h1></h1>
+          <div class="pure-u-1">
+            <canvas id="chart"></canvas>
+          </div>
+        </div>
+    </div>
+    <p style="position: absolute; bottom: 0px; right: 1em; font-size:0.5em">Information courtesy of <a href="http://www.imdb.com">IMDb</a>. Used with permission.<p>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
+    <script src="display.js"></script>
+  </body>
+</html>
