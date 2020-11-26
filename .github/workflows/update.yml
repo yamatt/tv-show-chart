@@ -3,6 +3,8 @@ name: Update TV show data from IMDb
 on:
   schedule:
     - cron: "0 4 * * 1"
+  tags:
+    - update-data
 
 jobs:
   generate:
