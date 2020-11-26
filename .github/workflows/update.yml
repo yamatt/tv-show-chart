@@ -1,0 +1,32 @@
+---
+name: Update TV show data from IMDb
+on:
+  schedule:
+    - cron: "0 4 * * 1"
+
+jobs:
+  generate:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download latest IMDb Episodes file
+        uses: wei/curl@master
+        with:
+          args: https://datasets.imdbws.com/title.episode.tsv.gz -O
+      - name: Download latest IMDb Ratings file
+        uses: wei/curl@master
+        with:
+          args: https://datasets.imdbws.com/title.ratings.tsv.gz -O
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+      - name: Install generator dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install tqdm
+      - name: Run generator
+        run: python3 generate_data.py title.episode.tsv.gz title.ratings.tsv.gz
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Updating data
