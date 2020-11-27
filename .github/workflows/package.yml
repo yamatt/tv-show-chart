@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  pull_request:
 
 jobs:
   javascript:
@@ -18,7 +19,7 @@ jobs:
         run: npm install --global webpack@5.8.0 webpack-cli@4.2.0
       - name: Package libraries
         run: webpack
-      - name: Commit back updated data to repository
+      - name: Commit back dist library to repository
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Updating package
