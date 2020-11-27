@@ -1,0 +1,25 @@
+---
+name: Update TV show data from IMDb
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  javascript:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install NodeJS
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: '12'
+      - name: Install webpack
+        run: npm install --global webpack@5.8.0
+      - name: Package libraries
+        run: webpack
+      - name: Commit back updated data to repository
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Updating package
+          file_pattern: dist/bundle.js
