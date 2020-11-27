@@ -1,5 +1,5 @@
 ---
-name: Update TV show data from IMDb
+name: Build JavaScript packages
 on:
   push:
     branches:
