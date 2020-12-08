@@ -34,4 +34,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Updating data
-          file_pattern: data/*.data
+          file_pattern: data
