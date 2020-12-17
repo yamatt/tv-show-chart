@@ -3,7 +3,7 @@ name: Update TV show data from IMDb
 on:
   schedule:
     - cron: "0 4 * * 1"
-  workflow_dispatch
+  workflow_dispatch:
 
 jobs:
   generate:
@@ -28,8 +28,17 @@ jobs:
           python3 -m pip install -r requirements.txt
       - name: Run generator
         run: python3 generate_data.py title.episode.tsv.gz title.ratings.tsv.gz
-      - name: Commit back updated data to repository
+      - name: Get date
+        run: echo "CURRENT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+      - name: Generate last updated badge
+        uses: emibcn/badge-action@v1
+        with:
+          label: 'Updated'
+          status: ${{ env.CURRENT_DATE }}
+          color: 'blue'
+          path: '.github/badges/updated.svg'
+      - name: Commit updated data back to repository
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Updating data
-          file_pattern: data
+          file_pattern: data .github/badges/
