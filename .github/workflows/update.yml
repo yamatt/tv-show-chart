@@ -3,9 +3,7 @@ name: Update TV show data from IMDb
 on:
   schedule:
     - cron: "0 4 * * 1"
-  push:
-    tags:
-    - update-data
+  workflow_dispatch
 
 jobs:
   generate:
