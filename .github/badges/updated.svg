@@ -1,0 +1,20 @@
+<svg width="132.3" height="20" viewBox="0 0 1323 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Updated: 2020-12-21">
+  <title>Updated: 2020-12-21</title>
+  <linearGradient id="a" x2="0" y2="100%">
+    <stop offset="0" stop-opacity=".1" stop-color="#EEE"/>
+    <stop offset="1" stop-opacity=".1"/>
+  </linearGradient>
+  <mask id="m"><rect width="1323" height="200" rx="30" fill="#FFF"/></mask>
+  <g mask="url(#m)">
+    <rect width="563" height="200" fill="#555"/>
+    <rect width="760" height="200" fill="#08C" x="563"/>
+    <rect width="1323" height="200" fill="url(#a)"/>
+  </g>
+  <g aria-hidden="true" fill="#fff" text-anchor="start" font-family="Verdana,DejaVu Sans,sans-serif" font-size="110">
+    <text x="60" y="148" textLength="463" fill="#000" opacity="0.25">Updated</text>
+    <text x="50" y="138" textLength="463">Updated</text>
+    <text x="618" y="148" textLength="660" fill="#000" opacity="0.25">2020-12-21</text>
+    <text x="608" y="138" textLength="660">2020-12-21</text>
+  </g>
+  
+</svg>
