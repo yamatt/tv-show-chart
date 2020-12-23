@@ -36,9 +36,9 @@ jobs:
           label: 'Updated'
           status: ${{ env.CURRENT_DATE }}
           color: 'blue'
-          path: '.github/badges/updated.svg'
+          path: 'dist/static/img/updated.svg'
       - name: Commit updated data back to repository
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: Updating data
-          file_pattern: data .github/badges/
+          file_pattern: data dist/static/img/
