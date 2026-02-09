@@ -1,0 +1,14 @@
+[project]
+name = "tv-show-chart"
+version = "0.1.0"
+description = "Compare the scores of TV series against each other using IMDb data"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.3.1",
+    "imdb-sqlite>=2.1.0",
+ "tqdm>=4.67.3",
+]
+
+[tool.uv]
+package = false

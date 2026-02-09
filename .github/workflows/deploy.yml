@@ -1,0 +1,45 @@
+---
+name: Build and deploy site
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - src/**
+            - data/episodes.db
+            - package.json
+            - package-lock.json
+            - webpack.config.js
+            - .github/workflows/deploy.yml
+    workflow_dispatch:
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            pages: write
+            id-token: write
+        steps:
+            - uses: actions/checkout@v4
+            - name: Configure GitHub Pages
+              uses: actions/configure-pages@v5
+            - name: Install Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.12"
+            - name: Install Node dependencies
+              run: npm install
+            - name: Build with webpack
+              run: npm run build
+            - name: Upload Pages artifact
+              uses: actions/upload-pages-artifact@v3
+              with:
+                  path: ./public-build
+            - name: Deploy to GitHub Pages
+              uses: actions/deploy-pages@v4

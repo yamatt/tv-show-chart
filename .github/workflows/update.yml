@@ -1,44 +1,31 @@
 ---
-name: Update TV show data from IMDb
+name: Update TV show data
 on:
   schedule:
-    - cron: "0 4 * * 1"
+    - cron: "0 2 * * 0" # every Sunday at 2:00 AM
   workflow_dispatch:
 
 jobs:
   generate:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v2
-      - name: Download latest IMDb Episodes file
-        uses: wei/curl@master
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          args: https://datasets.imdbws.com/title.episode.tsv.gz -O
-      - name: Download latest IMDb Ratings file
-        uses: wei/curl@master
-        with:
-          args: https://datasets.imdbws.com/title.ratings.tsv.gz -O
-      - name: Set up Python 3.7
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.7'
-      - name: Install generator dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -r requirements.txt
-      - name: Run generator
-        run: python3 generate_data.py title.episode.tsv.gz title.ratings.tsv.gz
-      - name: Get date
-        run: echo "CURRENT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
-      - name: Generate last updated badge
-        uses: emibcn/badge-action@v1
-        with:
-          label: 'Updated'
-          status: ${{ env.CURRENT_DATE }}
-          color: 'blue'
-          path: 'dist/static/img/updated.svg'
+          python-version: "3.12"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+      - name: Install dependencies
+        run: uv sync
+      - name: Download and import IMDb data
+        run: uv run imdb-sqlite --only "episodes,ratings,titles"
+      - name: Build compact database
+        run: uv run python generate_data.py
       - name: Commit updated data back to repository
-        uses: stefanzweifel/git-auto-commit-action@v4
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: Updating data
-          file_pattern: data dist/static/img/
+          file_pattern: data/episodes.db

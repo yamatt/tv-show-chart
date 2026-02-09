@@ -3,3 +3,9 @@ source
 .env
 *.pyc
 *~
+node_modules/
+public-build/
+dist/
+.uv/
+imdb.db
+downloads/

@@ -5,9 +5,13 @@
    "private": true,
    "keywords": [],
    "author": "",
-   "license": "AGPLv3",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "build": "webpack"
+  },
    "devDependencies": {
-     "webpack": "5.8.0",
-     "webpack-cli": "4.2.0"
+    "copy-webpack-plugin": "^11.0.0",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^5.1.4"
    }
  }

@@ -1,196 +1,210 @@
-from urllib.request import urlopen
-from tempfile import NamedTemporaryFile
-import gzip
-from collections import namedtuple
-from json import dumps, JSONEncoder
-import os
-from os import path
+import sqlite3
 import sys
+from pathlib import Path
 
+import click
 from tqdm import tqdm
 
-class Episode(object):
-    @classmethod
-    def from_episode_tsv(cls, tsv, ratings):
-        values = tsv.decode().strip().split("\t")
-        try:
-            score = float(ratings.ratings.get(values[0]))
-        except ValueError:
-            score = None
-        except TypeError:
-            score = None
-        return cls(
-            values[0],
-            values[1],
-            values[2],
-            values[3],
-            score
+
+def generate_episodes_db(
+    imdb_db: str,
+    output_db: str,
+    min_show_votes: int,
+    batch_size: int,
+):
+    """Extract episode data from IMDb database and create a compact episodes database."""
+
+    click.echo(f"Loading IMDb database from {imdb_db}")
+    source_conn = sqlite3.connect(imdb_db)
+    source_cursor = source_conn.cursor()
+
+    Path(output_db).parent.mkdir(exist_ok=True)
+    output_conn = sqlite3.connect(output_db)
+    output_cursor = output_conn.cursor()
+
+    output_cursor.execute("DROP TABLE IF EXISTS episodes")
+    output_cursor.execute("DROP TABLE IF EXISTS shows")
+    output_cursor.execute("DROP TABLE IF EXISTS shows_by_name")
+    output_cursor.execute(
+        """
+        CREATE TABLE episodes (
+            id TEXT PRIMARY KEY,
+            parent_id TEXT NOT NULL,
+            season INTEGER NOT NULL,
+            episode_number INTEGER NOT NULL,
+            name TEXT,
+            score REAL
         )
-
-    @classmethod
-    def from_line(cls, episode_line, rating_line):
-        return cls(
-            episode_line[0],
-            episode_line[1],
-            episode_line[2],
-            episode_line[3],
-            rating_line[1]
+    """
+    )
+    output_cursor.execute(
+        """
+        CREATE TABLE shows (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            year INTEGER,
+            rating REAL
         )
-
-    def __init__(self, id, parent, season, episode, score):
-        self.id = id
-        self.parent = parent
-        self.season = season
-        self.episode = episode
-        self.score = score
-
-    def to_json(self):
-        return {
-            "id": self.id,
-            "parent": self.parent,
-            "season": self.season,
-            "episode": self.episode,
-            "score": self.score
-        }
-
-class SourceBase(object):
-    URL = None
-    @classmethod
-    def from_download(cls, destination_file=None):
-        return cls.from_url(cls.URL, destination_file)
-
-    @classmethod
-    def from_url(cls, url, destination_file=None):
-        if not destination_file:
-            destination_file = NamedTemporaryFile()
-
-        response = urlopen(url)
-        p = tqdm(desc=url, total=response.length, leave=False)
-        while True:
-            chunk = response.read(4096)
-            if not chunk:
-                break
-            destination_file.write(chunk)
-            p.update(4096)
-        p.close()
-
-        destination_file.seek(0)
-
-        return cls.from_gz_file(destination_file)
-
-    @classmethod
-    def from_gz_path(cls, path):
-        return cls.from_gz_file(open(path, "rb"))
-
-    @classmethod
-    def from_gz_file(cls, file):
-        return cls(
-            gzip.GzipFile(fileobj=file, mode="rb")
+    """
+    )
+    output_cursor.execute(
+        """
+        CREATE TABLE shows_by_name (
+            name TEXT NOT NULL,
+            id TEXT NOT NULL,
+            year INTEGER
         )
+    """
+    )
+    output_cursor.execute(
+        """
+        CREATE INDEX idx_parent_season_ep
+        ON episodes(parent_id, season, episode_number)
+    """
+    )
+    output_cursor.execute(
+        """
+        CREATE INDEX idx_shows_name
+        ON shows(name)
+    """
+    )
+    output_cursor.execute(
+        """
+        CREATE INDEX idx_shows_by_name
+        ON shows_by_name(name)
+    """
+    )
+    output_conn.commit()
 
-    def __init__(self, source_file):
-        self.source = source_file
+    click.echo(f"Filtering to shows with at least {min_show_votes} ratings")
+    source_cursor.execute(
+        """
+        SELECT COUNT(*)
+        FROM episodes e
+        JOIN ratings show_r ON e.show_title_id = show_r.title_id
+                WHERE e.show_title_id IS NOT NULL
+                    AND e.season_number IS NOT NULL
+                    AND e.episode_number IS NOT NULL
+                    AND show_r.votes >= ?
+    """,
+        (min_show_votes,),
+    )
+    total_rows = source_cursor.fetchone()[0]
+    click.echo(f"Eligible episodes: {total_rows}")
 
-    def get_id(self, id):
-        while True:
-            line = self.source.readline()
-            if not line:
-                break
-            values = line.decode().strip().split("\t")
-            if values[0] == id:
-                return values
+    click.echo("Populating shows table")
+    source_cursor.execute(
+        """
+        SELECT DISTINCT
+            e.show_title_id,
+            t.primary_title,
+            t.premiered,
+            show_r.rating
+        FROM episodes e
+        JOIN ratings show_r ON e.show_title_id = show_r.title_id
+        JOIN titles t ON e.show_title_id = t.title_id
+        WHERE e.show_title_id IS NOT NULL
+          AND e.season_number IS NOT NULL
+          AND e.episode_number IS NOT NULL
+          AND show_r.votes >= ?
+        ORDER BY t.primary_title
+    """,
+        (min_show_votes,),
+    )
+    show_rows = source_cursor.fetchall()
+    click.echo(f"Eligible shows: {len(show_rows)}")
+    output_cursor.executemany(
+        """
+        INSERT INTO shows (id, name, year, rating)
+        VALUES (?, ?, ?, ?)
+    """,
+        show_rows,
+    )
+    output_cursor.executemany(
+        """
+        INSERT INTO shows_by_name (name, id, year)
+        VALUES (?, ?, ?)
+    """,
+        [(name, show_id, year) for show_id, name, year, _rating in show_rows],
+    )
+    output_conn.commit()
 
-    def reset(self):
-        self.source.seek(0)
+    source_cursor.execute(
+        """
+        SELECT
+            e.episode_title_id,
+            e.show_title_id,
+            e.season_number,
+            e.episode_number,
+            t.primary_title,
+            r.rating
+        FROM episodes e
+        JOIN ratings show_r ON e.show_title_id = show_r.title_id
+        LEFT JOIN ratings r ON e.episode_title_id = r.title_id
+        LEFT JOIN titles t ON e.episode_title_id = t.title_id
+                WHERE e.show_title_id IS NOT NULL
+                    AND e.season_number IS NOT NULL
+                    AND e.episode_number IS NOT NULL
+                    AND show_r.votes >= ?
+        ORDER BY e.show_title_id, e.season_number, e.episode_number
+    """,
+        (min_show_votes,),
+    )
 
-class EpisodesSource(SourceBase):
-    URL = "https://datasets.imdbws.com/title.episode.tsv.gz"
+    batch = []
+    with tqdm(
+        total=total_rows,
+        desc="Importing episodes",
+        unit="rows",
+        file=sys.stderr,
+        leave=True,
+        dynamic_ncols=True,
+    ) as progress:
+        for row in source_cursor:
+            batch.append(row)
+            if len(batch) >= batch_size:
+                output_cursor.executemany(
+                    """
+                    INSERT INTO episodes
+                    (id, parent_id, season, episode_number, name, score)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                    batch,
+                )
+                output_conn.commit()
+                progress.update(len(batch))
+                batch.clear()
 
-class RatingsSource(SourceBase):
-    URL = "https://datasets.imdbws.com/title.ratings.tsv.gz"
+        if batch:
+            output_cursor.executemany(
+                """
+                INSERT INTO episodes
+                (id, parent_id, season, episode_number, name, score)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """,
+                batch,
+            )
+            output_conn.commit()
+            progress.update(len(batch))
 
-class Ratings(object):
-    SOURCE=RatingsSource
-    @classmethod
-    def from_path(cls, path):
-        return cls.from_file(
-            open(path, 'rb')
-        )
+    source_conn.close()
+    output_conn.close()
 
-    @classmethod
-    def from_file(cls, f):
-        return cls.from_source(
-            cls.SOURCE.from_gz_file(f)
-        )
+    db_size = Path(output_db).stat().st_size
+    click.echo(
+        f"Episodes database created: {output_db} ({db_size / (1024 * 1024):.1f} MB)"
+    )
 
-    @classmethod
-    def from_source(cls, ratings_source):
-        ratings = {}
-        _ = ratings_source.source.readline() # skip first line
-        while True:
-            line = ratings_source.source.readline()
-            if not line:
-                break
-            ratings_values = line.decode().strip().split("\t")
-            ratings[ratings_values[0]] = ratings_values[1]
-        return cls(ratings)
 
-    def __init__(self, ratings):
-        self.ratings = ratings
+@click.command()
+@click.option("--imdb-db", default="imdb.db", show_default=True)
+@click.option("--output-db", default="data/episodes.db", show_default=True)
+@click.option("--min-show-votes", default=5000, show_default=True, type=int)
+@click.option("--batch-size", default=10000, show_default=True, type=int)
+def main(imdb_db: str, output_db: str, min_show_votes: int, batch_size: int):
+    """Build a compact episode database for the chart."""
+    generate_episodes_db(imdb_db, output_db, min_show_votes, batch_size)
 
-class Shows(object):
-    EPISODE = Episode
-
-    @classmethod
-    def from_sources(cls, episodes_source, ratings):
-        shows = {}
-        p = tqdm(desc="Matching data", total=sum(1 for line in episodes_source.source), leave=False)
-        episodes_source.source.seek(0)
-        _ = episodes_source.source.readline() # skip first line
-
-        while True:
-            line = episodes_source.source.readline()
-            if not line:
-                break
-            episode = cls.EPISODE.from_episode_tsv(line, ratings)
-
-            if not episode.parent in shows:
-                shows[episode.parent] = {}
-
-            if not episode.season in shows[episode.parent]:
-                shows[episode.parent][episode.season]=[]
-
-            shows[episode.parent][episode.season].append(episode)
-            p.update()
-        p.close()
-        return cls(shows)
-
-    def __init__(self, shows):
-        self.shows = shows
-
-def main(shows):
-    for show_id, seasons in tqdm(shows.shows.items(), desc="Writing data", leave=False):
-
-        file_name = "data/{show_id}.data".format(
-            show_id=show_id
-        )
-        with open(file_name, "w") as f:
-            for season in seasons.keys():
-                f.write(season + "\t")
-                for episode in seasons[season]:
-                    f.write("{episode_id}:{score}\t".format(
-                        episode_id=episode.id,
-                        score=episode.score if episode.score else "-"
-                    ))
-                f.write("\n")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        episodes_source = EpisodesSource.from_gz_path(sys.argv[1])
-        ratings = Ratings.from_source(RatingsSource.from_gz_path(sys.argv[2]))
-
-        shows = Shows.from_sources(episodes_source, ratings)
-
-        main(shows)
-    else:
-        lambda_handler(None, None)
+    main()
