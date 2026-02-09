@@ -25,7 +25,7 @@ jobs:
       - name: Build compact database
         run: uv run python generate_data.py
       - name: Commit updated data back to repository
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: Updating data
           file_pattern: data/episodes.db
