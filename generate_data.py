@@ -198,7 +198,7 @@ def generate_episodes_db(
 
 @click.command()
 @click.option("--imdb-db", default="imdb.db", show_default=True)
-@click.option("--output-db", default="data/episodes.db", show_default=True)
+@click.option("--output-db", default="public-build/episodes.db", show_default=True)
 @click.option("--min-show-votes", default=5000, show_default=True, type=int)
 @click.option("--batch-size", default=10000, show_default=True, type=int)
 def main(imdb_db: str, output_db: str, min_show_votes: int, batch_size: int):

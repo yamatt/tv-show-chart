@@ -6,26 +6,40 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate:
+  generate-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v6
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install uv
-        uses: astral-sh/setup-uv@v2
+        uses: astral-sh/setup-uv@v7
       - name: Install dependencies
         run: uv sync
       - name: Download and import IMDb data
         run: uv run imdb-sqlite --only "episodes,ratings,titles"
       - name: Build compact database
         run: uv run python generate_data.py
-      - name: Commit updated data back to repository
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Install Node.js
+        uses: actions/setup-node@v6
         with:
-          commit_message: Updating data
-          file_pattern: data/episodes.db
+          node-version: "20"
+          cache: "npm"
+      - name: Install Node dependencies
+        run: npm install
+      - name: Build with webpack
+        run: npm run build
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./public-build
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

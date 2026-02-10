@@ -11,7 +11,6 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: 'src/index.html', to: 'index.html' },
-        { from: 'data/episodes.db', to: 'episodes.db' },
       ],
     }),
   ],
