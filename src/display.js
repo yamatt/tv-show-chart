@@ -6,14 +6,27 @@ var search_timer = null;
 function initDatabase() {
     return Promise.resolve().then(function() {
         function loadDatabase(sqlInstance) {
+            console.log('Fetching episodes.db...');
             return fetch('episodes.db')
-                .then(response => response.arrayBuffer())
+                .then(response => {
+                    console.log('Fetch response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch database: ' + response.status + ' ' + response.statusText);
+                    }
+                    return response.arrayBuffer();
+                })
                 .then(buffer => {
+                    console.log('Database buffer size:', buffer.byteLength);
+                    if (buffer.byteLength === 0) {
+                        throw new Error('Database file is empty');
+                    }
                     db = new sqlInstance.Database(new Uint8Array(buffer));
+                    console.log('Database loaded successfully');
                 });
         }
 
         if (typeof SQL !== 'undefined') {
+            console.log('Using pre-loaded SQL.js');
             return loadDatabase(SQL);
         }
 
@@ -21,16 +34,22 @@ function initDatabase() {
             throw new Error('sql.js not loaded');
         }
 
+        console.log('Loading SQL.js...');
         return initSqlJs({
             locateFile: function(file) {
                 return "https://sql.js.org/dist/" + file;
             }
         }).then(function(SQL_INSTANCE) {
+            console.log('SQL.js loaded successfully');
             window.SQL = SQL_INSTANCE;
             return loadDatabase(SQL_INSTANCE);
         });
     }).catch(function(error) {
         console.error('Failed to load database:', error);
+        var title = document.querySelector('h1');
+        if (title) {
+            title.textContent = 'Error: ' + error.message;
+        }
         throw error;
     });
 }
