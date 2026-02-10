@@ -36,9 +36,11 @@ function initDatabase() {
 }
 
 function get_show_id() {
-    var url_params = new URLSearchParams(window.location.search);
-    var show_id = url_params.get('id');
-    return show_id;
+    var hash = window.location.hash;
+    if (hash && hash.length > 1) {
+        return hash.substring(1);
+    }
+    return null;
 }
 
 function normalize_text(value) {
@@ -172,6 +174,9 @@ function setup_chart() {
     show_chart = new Chart(ctx, {
         type: 'line',
         options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: window.innerWidth < 768 ? 1 : 2,
             tooltips: {
                 callbacks: {
                     title: function(tooltipItems, data) {
@@ -204,9 +209,13 @@ function setup_chart() {
                     }
                 }
             },
-             legend: {
-                position: 'bottom'
-             },
+            legend: {
+                position: 'bottom',
+                labels: {
+                    boxWidth: window.innerWidth < 768 ? 20 : 40,
+                    fontSize: window.innerWidth < 768 ? 10 : 12
+                }
+            },
             scales: {
                 yAxes: [{
                     ticks: {
@@ -235,6 +244,8 @@ function update_chart(show_id) {
         console.error('Database not loaded');
         return;
     }
+
+    window.location.hash = show_id;
 
     try {
         var show_rating = null;
@@ -385,6 +396,12 @@ initDatabase().then(() => {
     if (input) {
         input.addEventListener('input', handle_search_input);
     }
+    window.addEventListener('hashchange', function() {
+        var show_id = get_show_id();
+        if (show_id) {
+            update_chart(show_id);
+        }
+    });
     var show_id = get_show_id();
     if (show_id) {
         update_chart(show_id);

@@ -5,12 +5,83 @@
     <title>TV Show Chart</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css" integrity="sha384-nn4HPE8lTHyVtfCBi5yW9d20FjT8BJwUXyWZT9InLYax14RDjBj46LmSztkmNP9w" crossorigin="anonymous">
+    <style>
+      body {
+        padding-bottom: 3em;
+        position: relative;
+        min-height: 100vh;
+      }
+      .search-container {
+        padding: 1em;
+        text-align: center;
+      }
+      .search-container label {
+        display: block;
+        margin-bottom: 0.5em;
+      }
+      .search-container form {
+        display: inline-block;
+        text-align: left;
+        width: 100%;
+        max-width: 500px;
+      }
+      .search-container input {
+        width: 100%;
+        max-width: 400px;
+        box-sizing: border-box;
+      }
+      .search-container button {
+        margin-top: 0.5em;
+      }
+      #show_results {
+        max-width: 500px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin: 0.5em auto 0;
+        max-height: 300px;
+        overflow-y: auto;
+        text-align: left;
+      }
+      .content {
+        padding: 0 1em;
+        margin: 0 auto;
+        max-width: 1200px;
+      }
+      .content h1 {
+        word-wrap: break-word;
+        font-size: 1.5em;
+      }
+      .chart-container {
+        position: relative;
+        width: 100%;
+        margin: 1em 0;
+      }
+      footer {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        padding: 1em;
+        font-size: 0.75em;
+        text-align: center;
+      }
+      @media (max-width: 768px) {
+        .content h1 {
+          font-size: 1.2em;
+        }
+        .search-container {
+          padding: 0.5em;
+        }
+        #show_results {
+          max-width: 100%;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div class="pure-g"><!-- top bar -->
-      <div class="pure-u-1-12"></div>
-      <div class="pure-u-1-2"></div>
-      <div class="pure-u-5-12">
+    <div class="pure-g">
+      <div class="pure-u-1 search-container">
         <form class="pure-form" id="show_form">
           <label for="show_search">Search by IMDb ID or show name</label>
           <input id="show_search" type="search" name="id" placeholder="Game of Thrones" class="pure-input-rounded">
@@ -19,16 +90,15 @@
         <div id="show_results" class="pure-menu" style="display: none;"></div>
       </div>
     </div>
-    <div class="pure-g"> <!-- content -->
-        <div class="pure-u-1-6"></div>
-        <div class="pure-u-2-3 content">
-          <h1></h1>
-          <div class="pure-u-1">
-            <canvas id="chart"></canvas>
-          </div>
+    <div class="pure-g">
+      <div class="pure-u-1 content">
+        <h1></h1>
+        <div class="chart-container">
+          <canvas id="chart"></canvas>
         </div>
+      </div>
     </div>
-    <p style="position: absolute; bottom: 0px; right: 1em; font-size:0.5em">Information courtesy of <a href="http://www.imdb.com">IMDb</a>. Used with permission.<p>
+    <footer>Information courtesy of <a href="http://www.imdb.com">IMDb</a>. Used with permission.</footer>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
     <script src="https://sql.js.org/dist/sql-wasm.js"></script>
     <script>
