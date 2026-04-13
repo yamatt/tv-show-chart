@@ -5,7 +5,7 @@ description = "Compare the scores of TV series against each other using IMDb dat
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "click>=8.3.1",
+    "click>=8.3.2",
     "imdb-sqlite>=2.1.0",
  "tqdm>=4.67.3",
 ]
