@@ -34,7 +34,7 @@ jobs:
           node-version: "24"
           cache: "npm"
       - name: Install Node dependencies
-        run: npm install
+        run: npm ci
       - name: Build with webpack
         run: npm run build
       - name: Upload Pages artifact
